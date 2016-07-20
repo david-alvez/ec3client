@@ -9,3 +9,4 @@ RUN apt-get -y -q install python-ply
 RUN apt-get -y -q install sshpass
 RUN apt-get -y -q install python-pip
 RUN pip install IM-client
+CMD ["/bin/bash"]
