@@ -1,0 +1,70 @@
+description spark (
+    kind = 'component' and
+    short = 'Lightning-fast cluster computing.' and
+    content = 'Apache Spark is a fast and general engine for large-scale data processing.
+
+Webpage: http://spark.apache.org/'
+)
+
+configure sparkinst (
+@begin
+---
+    - unarchive: src=http://apache.rediris.es/spark/spark-1.6.2/spark-1.6.2-bin-hadoop2.6.tgz dest=/opt/ copy=no creates=/opt/spark-1.6.2-bin-hadoop2.6 copy=no
+    - file: src=/opt/spark-1.6.2-bin-hadoop2.6 dest=/opt/spark state=link
+    - copy: dest=/etc/profile.d/spark.sh content="export PATH=$PATH:/opt/spark/bin\nexport SPARK_HOME=/opt/spark"
+@end
+)
+
+configure front (
+@begin
+---
+  - tasks:
+    - include: sparkinst.yml
+    - name: Set Mesos authentication
+      blockinfile:
+        dest: /opt/spark/conf/spark-defaults.conf
+        create: yes
+        block: |
+          spark.master mesos://{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}:5050
+          spark.serializer org.apache.spark.serializer.KryoSerializer 
+          spark.mesos.principal {{principal}}
+          spark.mesos.secret {{secret}}
+          spark.eventLog.enabled true
+          spark.history.fs.logDirectory hdfs://{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}:9000/log/history
+          spark.eventLog.dir hdfs://{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}:9000/log
+        mode: 0644
+    - include: historyserver.yml 
+@end
+)
+
+configure wn (
+@begin
+---
+   - tasks:
+     - include: sparkinst.yml
+
+@end
+)
+
+configure historyserver (
+@begin
+---
+    - name: start history server
+      shell: /opt/spark/sbin/start-history-server.sh
+
+@end
+)
+
+configure wnmesos (
+@begin
+---
+  - tasks:
+    - include: sparkinst.yml
+
+@end
+)
+
+
+
+
+

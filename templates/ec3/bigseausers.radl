@@ -1,0 +1,75 @@
+description bigseausers (
+    kind = 'component' and
+    short = 'Create BIGSEA Users' and
+    content = 'Users for the BIGSEA Project.'
+)
+
+configure createbigseausers (
+@begin
+---
+- name: add several users
+  user: name={{ item.name }} password={{ item.password }} uid={{ item.uid }} shell=/bin/bash generate_ssh_key=yes ssh_key_file=/home/{{ item.name }}/.ssh/id_rsa
+  with_items:
+    - { name: 'iblanque', uid: '1002', password: 'O6E7MaHIzPWzg' }
+    - { name: 'nantunes', uid: '1003', password: 'O6E7MaHIzPWzg' }
+    - { name: 'pmgsilva', uid: '1004', password: 'O6E7MaHIzPWzg' }
+    - { name: 'cesenna',  uid: '1005', password: 'O6E7MaHIzPWzg' }
+    - { name: 'bigsea',   uid: '1006', password: 'O6E7MaHIzPWzg' }
+    - { name: 'dmestre',  uid: '1007', password: 'O6E7MaHIzPWzg' }
+    - { name: 'cpires',   uid: '1008', password: 'O6E7MaHIzPWzg' }
+    - { name: 'aserven',  uid: '1009', password: 'O6E7MaHIzPWzg' }
+
+- name: copy ssh keys
+  local_action: command cp /home/{{ item.name }}/.ssh/id_rsa.pub /tmp/{{ item.name }}_id_rsa.pub creates=/tmp/{{ item.name }}_id_rsa.pub
+  with_items:
+    - { name: 'iblanque' }
+    - { name: 'nantunes' }
+    - { name: 'pmgsilva' }
+    - { name: 'cesenna' }
+    - { name: 'bigsea' }
+    - { name: 'dmestre' }
+    - { name: 'cpires' }
+    - { name: 'aserven' }
+
+
+- name: Add the authorized_key to the user {{ item.name }}
+  authorized_key: user={{ item.name }} key="{{ lookup('file', '/tmp/' +  item.name  + '_id_rsa.pub') }}"
+  with_items:
+    - { name: 'iblanque' }
+    - { name: 'nantunes' }
+    - { name: 'pmgsilva' }
+    - { name: 'cesenna' }
+    - { name: 'bigsea' }
+    - { name: 'dmestre' }
+    - { name: 'cpires' }
+    - { name: 'aserven' }
+
+@end
+)
+
+configure front (
+@begin
+---
+  - tasks:
+    - include: createbigseausers.yml
+@end
+)
+
+configure wn (
+@begin
+---
+  - tasks:
+    - include: createbigseausers.yml
+
+@end
+)
+
+configure wnmesos (
+@begin
+---
+  - tasks:
+    - include: createbigseausers.yml
+
+@end
+)
+

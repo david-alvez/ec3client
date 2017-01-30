@@ -1,0 +1,47 @@
+description bigseausers (
+    kind = 'component' and
+    short = 'Create BIGSEA Users' and
+    content = 'Users for the BIGSEA Project.'
+)
+
+configure createbigseausers (
+@begin
+---
+    - user: name=iblanque password=O6E7MaHIzPWzg uid=1002 shell=/bin/bash
+    - user: name=nantunes password=O6E7MaHIzPWzg uid=1001 shell=/bin/bash
+    - user: name=pmgsilva password=O6E7MaHIzPWzg uid=1002 shell=/bin/bash
+    - user: name=cesenna password=O6E7MaHIzPWzg uid=1003 shell=/bin/bash
+    - user: name=bigsea password=O6E7MaHIzPWzg uid=1004 shell=/bin/bash
+    - user: name=dmestre password=O6E7MaHIzPWzg uid=1005 shell=/bin/bash
+    - user: name=cpires password=O6E7MaHIzPWzg uid=1006 shell=/bin/bash
+    - user: name=aserven password=O6E7MaHIzPWzg uid=1007 shell=/bin/bash
+
+@end
+)
+
+configure front (
+@begin
+---
+  - tasks:
+    - include: createbigseausers
+@end
+)
+
+configure wn (
+@begin
+---
+  - tasks:
+    - include: createbigseausers
+
+@end
+)
+
+configure wnmesos (
+@begin
+---
+  - tasks:
+    - include: createbigseausers
+
+@end
+)
+
