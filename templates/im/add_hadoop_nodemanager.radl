@@ -1,0 +1,29 @@
+etwork private ()
+#network public (outbound='yes')
+
+
+system nodemanager (
+        net_interface.0.connection='private' and
+        net_interface.0.dns_name= 'nodemanager-#N#' and
+        disk.0.os.name='linux' and
+        disk.0.os.credentials.username = 'USERNAME' and
+        disk.0.os.credentials.password = 'PASSWORD' and
+        disk.0.image.url = 'IMAGE_ID' and
+        disk.0.os.flavour='ubuntu' and
+        disk.0.applications contains (name='ansible.modules.indigo-dc.hadoop') and
+        disk.0.os.version='12.04' and
+        disk.0.os.credentials.new.password = 'NEWPASS'
+
+)
+
+
+configure nodemanager (
+@begin
+---
+ - roles:
+    - { role: 'indigo-dc.hadoop', hadoop_master: 'frontprivate',  hadoop_type_of_node: 'nodemanager' }
+
+@end
+)
+
+deploy nodemanager 1
