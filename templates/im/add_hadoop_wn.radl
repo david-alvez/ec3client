@@ -5,9 +5,9 @@ system wn (
         net_interface.0.connection='private' and
         net_interface.0.dns_name= 'wn-#N#' and
         disk.0.os.name='linux' and
-        disk.0.os.credentials.username = 'ubuntu' and
-        disk.0.os.credentials.password = 'yoyoyo' and
-        disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
+        disk.0.os.credentials.username = 'USERNAME' and
+        disk.0.os.credentials.password = 'PASSWORD' and
+        disk.0.image.url = 'IMAGE_ID' and
         disk.0.os.flavour='ubuntu' and
         disk.0.applications contains (name='ansible.modules.indigo-dc.hadoop') and
         disk.0.os.version='12.04' and
