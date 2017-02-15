@@ -1,7 +1,7 @@
 description mesos (
     kind = 'main' and
     short = 'Install and configure a Mesos cluster from mesosphere repo.' and
-    content = 'The template installs Mesos 0.27.1, Marathon 0.15.3 and Chronos 2.4.0 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
+    content = 'The template installs Mesos 1.1.0, Marathon 1.3.9 and Chronos 2.4.0 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
 
 Webpage: http://mesos.apache.org/'
 )
@@ -33,10 +33,79 @@ system front (
     disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
+configure front (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      TEMPLATES:
+        ec3_jpath: /system/front/ec3_templates
+      QUORUM: 1
+      SYSTEMS:
+         ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      AUTH:
+        ec3_xpath: /system/front/auth
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
+      vnode_prefix: 'bsagent'
+
+    roles:
+    # The install order matters !
+    # If the role order is altered the installation won't work
+    - { role: 'grycap.im' }
+    - { role: 'grycap.mesos', mesos_type_of_node: 'front',
+                              max_number_of_nodes: '{{NNODES}}',
+                              principal: 'ubuntu',
+                              secret: 'ubuntusecret' }
+    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
+                              auth: '{{AUTH}}',
+                              mesos_servername: bigseaserverpublic,
+                              ec3_max_instances: '{{NNODES}}'}
+
+    post_tasks:
+    - include: port_forwarding.yml
+@end
+)
+
 system wnmesos (
     cpu.count>=2 and
     memory.size>=2g and
     net_interface.0.connection='private'
+)
+
+configure wnmesos (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+    roles:
+      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
+                                max_number_of_nodes: '{{NNODES}}',
+                                principal: 'ubuntu',
+                                secret: 'ubuntusecret'}
+@end
+)
+
+system wn (
+    cpu.count>=2 and
+    memory.size>=2g and
+    net_interface.0.connection='private'
+)
+
+configure wn (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+    roles:
+      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
+                                max_number_of_nodes: '{{NNODES}}',
+                                principal: 'ubuntu',
+                                secret: 'ubuntusecret'}
+@end
 )
 
 configure port_forwarding (
@@ -54,74 +123,6 @@ configure port_forwarding (
 
   - name: Add routing for Spark History Server
     shell: iptables -t nat -A PREROUTING -i eth0 -d {{IM_NODE_PUBLIC_IP}} -p tcp --dport 18080 -j DNAT --to-destination {{hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"]}}:18080
-@end
-)
-
-configure front (
-@begin
----
-  - ec3_prio: -5
-    vars:
-      TEMPLATES:
-        ec3_jpath: /system/front/ec3_templates
-      QUORUM: 1
-      SYSTEMS:
-         ec3_jpath: /system/*
-      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
-      AUTH:
-        ec3_xpath: /system/front/auth
-      QUEUE_SYSTEM:
-        ec3_xpath: /system/front/queue_system
-      EXTRACT_PROXY_FILE:
-        ec3_file: extract_proxy.py
-
-    roles:
-    # The install order matters !
-    # If the role order is altered the installation won't work
-    - { role: 'grycap.im' }
-    - { role: 'grycap.mesos', mesos_type_of_node: 'front',
-                              max_number_of_nodes: '{{NNODES}}',
-                              vnode_prefix: 'bsagent',
-                              principal: 'ubuntu',
-                              secret: 'ubuntusecret' }
-    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
-                              auth: '{{AUTH}}',
-                              extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
-                              ec3_max_instances: '{{NNODES}}',
-                              vnode_prefix: 'bsagent' }
-
-    post_tasks:
-    - include: port_forwarding.yml
-@end
-)
-
-configure wnmesos (
-@begin
----
-  - ec3_prio: -5
-    vars:
-      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
-    roles:
-      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
-                                max_number_of_nodes: '{{NNODES}}',
-                                vnode_prefix: 'bsagent',
-                                principal: 'ubuntu',
-                                secret: 'ubuntusecret'}
-@end
-)
-
-configure wn (
-@begin
----
-  - ec3_prio: -5
-    vars:
-      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
-    roles:
-      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
-                                max_number_of_nodes: '{{NNODES}}',
-                                vnode_prefix: 'bsagent',
-                                principal: 'ubuntu',
-                                secret: 'ubuntusecret'}
 @end
 )
 
