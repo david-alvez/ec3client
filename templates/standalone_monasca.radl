@@ -1,0 +1,60 @@
+
+network public (
+  outbound = 'yes' 
+#  outports contains '3000/tcp' and
+#  outports contains '8070/tcp'
+)
+
+
+network private ()
+
+system front (
+    cpu.count>=1 and
+    memory.size>=4g and
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'one://ramses.i3m.upv.es/300' and
+    disk.0.os.credentials.username = 'ubuntu' and
+    net_interface.0.connection = 'private' and
+    net_interface.0.dns_name = 'monasca' and
+    net_interface.1.connection = 'public' and
+    net_interface.1.dns_name = 'monascaserverpublic' and
+    # Install ansible roles needed
+    disk.0.applications contains (name = 'ansible.modules.grycap.monasca') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.monasca-agent') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.monasca-alarms')
+)
+
+
+configure front (
+@begin
+  - roles:
+    - { role: 'grycap.monasca', tags: [ "os-monasca" ],
+                                keystone_ip_address: 'xxx.xxx.xxx.xxx',
+                                os_username: 'xxxxx',
+                                os_password: 'xxxxx',
+                                os_project_name: 'xxxxx',
+                                os_mon_username: 'xxxxx',
+                                os_mon_password: 'xxxxx',
+                                os_mon_project_name: 'xxxxx',
+                                os_mon_agent_username: 'xxxxx',
+                                os_mon_agent_password: 'xxxxx',
+                                mysql_root_pass: 'xxxxx' }
+
+    - { role: 'grycap.monasca-alarms', tags: [ "os-monasca-alarms" ],
+                                      keystone_ip_address: 'xxx.xxx.xxx.xxx',
+                                      os_mon_username: 'xxxxx',
+                                      os_mon_password: 'xxxxx',
+                                      os_mon_project_name: 'xxxxx' }
+
+    - { role: 'grycap.monasca-agent', tags: [ "os-monasca-agent" ],
+                                      keystone_ip_address: '10.0.0.83',
+                                      monasca_ip_address: '{{ansible_default_ipv4}}',
+                                      mysql_host: 'xxx.xxx.xxx.xxx',
+                                      mysql_root_pass: 'xxxxx',
+                                      os_username: 'xxxxx',
+                                      os_password: 'xxxxx',
+                                      os_project_name: 'xxxxx' }
+@end
+)
+
+deploy front 1

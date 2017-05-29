@@ -1,0 +1,34 @@
+description ubuntu_one (
+    kind = 'images' and
+    short = 'Ubuntu 14.04 (Front) and Ubuntu 16.04 (WNs) amn64 on Ramses.' and
+    content = 'Ubuntu 14.04 (Front) and Ubuntu 16.04 (WNs) amd64 on Ramses.'
+)
+
+# It uses Ubuntu 14
+system front (
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'one://ramses.i3m.upv.es/95' and
+    disk.0.os.credentials.username = 'xxxxxx' and
+    disk.0.os.credentials.password = 'xxxxxx'
+)
+
+# It uses Ubuntu 16
+system wn (
+    ec3_max_instances = 3 and # maximum number of working nodes in the cluster
+    ec3_min_instances = 3 and # minimum number of working nodes in the cluster
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'one://ramses.i3m.upv.es/95' and
+    disk.0.os.credentials.username = 'xxxxxx' and
+    disk.0.os.credentials.password = 'xxxxxx' and
+    ec3_if_fail = 'wnmesos'
+)
+
+# It uses Ubuntu 16
+system wnmesos (
+    ec3_max_instances = 5 and # maximum number of working nodes in the cluster
+    disk.0.os.name = 'linux' and
+    disk.0.image.url = 'one://ramses.i3m.upv.es/95' and
+    disk.0.os.credentials.username = 'xxxxxx' and
+    disk.0.os.credentials.password = 'xxxxxx'
+)
+

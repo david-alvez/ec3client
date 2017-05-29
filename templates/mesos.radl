@@ -1,0 +1,167 @@
+description mesos (
+    kind = 'main' and
+    short = 'Install and configure a Mesos cluster from mesosphere repo.' and
+    content = 'The template installs Mesos 0.27.1, Marathon 0.15.3 and Chronos 2.4.0 from mesosphere repo. If you want to use Docker containers, please, include the docker recipe.
+
+Webpage: http://mesos.apache.org/'
+)
+
+network public (
+    outbound = 'yes' and
+    outports contains '5050/tcp' and
+    outports contains '2181/tcp' and
+    outports contains '2888/tcp' and
+    outports contains '3888/tcp' and
+    outports contains '4400/tcp' and
+    outports contains '8080/tcp'
+)
+
+network private ()
+
+system front (
+    cpu.count>=4 and
+    memory.size>=8g and
+    net_interface.0.connection = 'private' and
+    net_interface.0.dns_name = 'largeserver' and
+    net_interface.1.connection = 'public' and
+    net_interface.1.dns_name = 'largeserverpub' and
+    queue_system = 'mesos' and
+    ec3_templates contains 'mesos' and
+    # Install ansible roles needed
+    disk.0.applications contains (name = 'ansible.modules.grycap.mesos,docker-opts') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.im')
+)
+
+system wnmesos (
+    cpu.count>=2 and
+    memory.size>=4g and
+    net_interface.0.connection='private'
+)
+
+system wn (
+    cpu.count>=2 and
+    memory.size>=2g and
+    net_interface.0.connection='private'
+)
+
+configure port_forwarding (
+@begin
+  - name: Enable port forwarding
+    shell: echo '1' > /proc/sys/net/ipv4/ip_forward
+
+  - name: Add configuration for port forwarding
+    lineinfile:
+      dest: /etc/sysctl.conf
+      line: 'net.ipv4.ip_forward = 1'
+
+#  - name: Add routing for Mesos
+#    shell: iptables -t nat -A PREROUTING -i eth0 -d {{IM_NODE_PUBLIC_IP}} -p tcp --dport 5050 -j DNAT --to-destination {{hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"]}}:5050
+
+#  - name: Add routing for Spark History Server
+#    shell: iptables -t nat -A PREROUTING -i eth0 -d {{IM_NODE_PUBLIC_IP}} -p tcp --dport 18080 -j DNAT --to-destination {{hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"]}}:18080
+  - iptables: 
+      table: nat
+      chain: PREROUTING
+      in_interface: eth0
+      protocol: tcp
+      destination: '{{IM_NODE_PUBLIC_IP}}'
+      destination_port: 18080
+      to_destination: '{{hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"]}}:18080'
+      jump: DNAT
+
+@end
+)
+
+configure front (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      TEMPLATES:
+        ec3_jpath: /system/front/ec3_templates
+      QUORUM: 1
+      SYSTEMS:
+         ec3_jpath: /system/*
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      AUTH:
+        ec3_xpath: /system/front/auth
+      QUEUE_SYSTEM:
+        ec3_xpath: /system/front/queue_system
+      EXTRACT_PROXY_FILE:
+        ec3_file: extract_proxy.py
+      principal: 'xxxxxxxx'
+      secret: 'xxxxxxxx' 
+      cluster_store_ip: '{{ ansible_default_ipv4.address }}'
+      cluster_advertise_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'
+
+
+    roles:
+    # The install order matters !
+    # If the role order is altered the installation won't work
+    - { role: 'grycap.im' }
+    - { role: 'grycap.mesos', mesos_type_of_node: 'front',
+                              max_number_of_nodes: '{{NNODES}}',
+                              vnode_prefix: 'largewn',
+                              mesos_docker_opts: '--cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
+                              principal: 'xxxxxxxx',
+                              secret: 'xxxxxxxx' }
+    - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
+                              auth: '{{AUTH}}',
+                              marathon_username: "xxxxxxxx", marathon_password: "xxxxxxxx",
+                              chronos_username: "xxxxxxxx", chronos_password: "xxxxxxxx",
+                              mesos_servername: 'largeserverpub',
+                              extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
+                              ec3_max_instances: '{{NNODES}}',
+                              vnode_prefix: 'largewn' }
+
+#    post_tasks:
+#    - include: port_forwarding.yml
+@end
+)
+
+configure wnmesos (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      cluster_store_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
+      cluster_advertise_ip: '{{ ansible_default_ipv4.address }}'
+    roles:
+      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
+                                max_number_of_nodes: '{{NNODES}}',
+                                vnode_prefix: 'largewn',
+                                principal: 'xxxxxxxx',
+                                mesos_docker_opts: '--cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
+                                secret: 'xxxxxxxx'}
+    tasks:
+     - name: Install Mesos-DNS
+       get_url: url=https://github.com/mesosphere/mesos-dns/releases/download/v0.6.0/mesos-dns-v0.6.0-linux-amd64 dest=/opt/mesos-dns force=no
+       register: result
+       until: result|success
+       retries: 5
+       delay: 2 
+
+@end
+)
+
+configure wn (
+@begin
+---
+  - ec3_prio: -5
+    vars:
+      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
+      cluster_store_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
+      cluster_advertise_ip: '{{ ansible_default_ipv4.address }}'
+    roles:
+      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
+                                max_number_of_nodes: '{{NNODES}}',
+                                vnode_prefix: 'largewn',
+                                principal: 'xxxxxxxx',
+                                mesos_docker_opts: '--cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
+                                secret: 'xxxxxxxx'}
+@end
+)
+
+deploy front 1

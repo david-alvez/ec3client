@@ -1,0 +1,72 @@
+network public (
+    outports contains '8899/tcp'
+)
+
+configure im_prolog (
+@begin
+    - apt: name=gcc,python-soappy,python-dev,libffi-dev,libssl-dev,libsqlite3-dev,python-pip update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+    - yum: name=gcc,SOAPpy,python-devel,libffi-devel,openssl-devel
+      when: ansible_os_family == "RedHat"
+    - command: rpm -e python-crypto --nodeps
+      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
+    - name: Install last version of setuptools with Pip
+      pip: name=setuptools extra_args="-I" state=latest
+    - name: Install backports.ssl_match_hostname
+      pip: name=backports.ssl_match_hostname state=latest
+@end
+)
+
+
+configure im_devel_pip (
+@begin
+    - include: im_prolog.yml
+    - pip: name=IM
+    - include: im_epilog.yml
+@end
+)
+
+configure im_devel_git (
+@begin
+    - include: im_prolog.yml
+    - file: path=/opt/tmp state=directory
+    - apt: name=git update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+    - yum: name=git
+      when: ansible_os_family == "RedHat"
+    - git: repo=https://github.com/grycap/im.git dest=/opt/tmp/im version=devel
+    # This fixes a really strange behaviour in Ubuntu 12.04
+    #- shell: python setup.py install; rm -rf /opt/tmp/im/build; python setup.py install chdir=/opt/tmp/im
+    - pip: name=/opt/tmp/im
+    - include: im_epilog.yml
+@end
+)
+
+configure im_devel_git_virtualenv (
+@begin
+    - pip: name=virtualenv
+    - command: virtualenv /opt/tmp/ec3env creates=/tmp/ec3env
+    - apt: name=git update_cache=yes cache_valid_time=3600
+      when: ansible_os_family == "Debian"
+    - yum: name=git
+      when: ansible_os_family == "RedHat"
+    - git: repo=https://github.com/ansible/ansible.git dest=/tmp/ansible version=release1.7.2
+    - git: repo=https://github.com/grycap/im.git dest=/tmp/im version=devel
+    - shell: source /opt/tmp/ec3env/bin/activate; python setup.py install
+      args:
+         chdir: /opt/tmp/ansible
+    - shell: source /opt/tmp/ec3env/bin/activate; python setup.py install
+      args:
+         chdir: /opt/tmp/im
+    - file: src=/tmp/ec3env/bin/im_service.py dest=/usr/local/bin/im_service.py
+    - include: im_epilog.yml
+@end
+)
+
+configure im_epilog (
+@begin
+    - file: path=/etc/init.d/im mode=0755
+    - service: name=im state=started
+@end
+)

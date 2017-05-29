@@ -1,31 +1,31 @@
 description ubuntu_one (
     kind = 'images' and
-    short = 'Ubuntu 14.04 amd64 on Rases.' and
-    content = 'Ubuntu 14.04 amd64 on Ramses.'
+    short = 'Ubuntu 14.04 amd64 on OneCloud.' and
+    content = 'Ubuntu 14.04 amd64 on OneCloud.'
 )
 
 system front (
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'one://SERVER/IMAGEID' and
-    disk.0.os.credentials.username = 'USERNAME' and
-    disk.0.os.credentials.password = 'PASSWORD'
+    disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
+    disk.0.os.credentials.username = 'ubuntu' and
+    disk.0.os.credentials.password = 'yoyoyo'
 )
 
 system wn (
     ec3_max_instances = 3 and # maximum number of working nodes in the cluster
     ec3_min_instances = 3 and # minimum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'one://SERVER/IMAGEID' and
-    disk.0.os.credentials.username = 'USERNAME' and
-    disk.0.os.credentials.password = 'PASSWORD' and
+    disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
+    disk.0.os.credentials.username = 'ubuntu' and
+    disk.0.os.credentials.password = 'yoyoyo' and
     ec3_if_fail = 'wnmesos'
 )
 
 system wnmesos (
     ec3_max_instances = 4 and # maximum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
-    disk.0.image.url = 'one://SERVER/IMAGEID' and
-    disk.0.os.credentials.username = 'USERNAME' and
-    disk.0.os.credentials.password = 'PASSWORD'
+    disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
+    disk.0.os.credentials.username = 'ubuntu' and
+    disk.0.os.credentials.password = 'yoyoyo'
 )
 

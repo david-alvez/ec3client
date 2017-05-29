@@ -1,0 +1,96 @@
+description bigseausers (
+    kind = 'component' and
+    short = 'Create BIGSEA Users' and
+    content = 'Users for the BIGSEA Project.'
+)
+
+configure wnbigseausers (
+@begin
+---
+- name: add several users, use mkpasswd to encode the password. Add as many users as you wish
+  user: name={{ item.name }} home=/home/users/{{ item.name }} createhome=no password={{ item.password }} uid={{ item.uid }} shell=/bin/bash 
+  with_items:
+    - { name: 'user02', uid: '1002', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user03', uid: '1003', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user04', uid: '1004', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user05', uid: '1005', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user06', uid: '1006', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user07', uid: '1007', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user08', uid: '1008', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user09', uid: '1009', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user10', uid: '1010', password: 'XXXXXXXXXXXXX' }
+@end
+)
+
+configure createbigseausers (
+@begin
+---
+- name: add several users
+  user: name={{ item.name }} home=/home/users/{{ item.name }} password={{ item.password }} uid={{ item.uid }} shell=/bin/bash generate_ssh_key=yes ssh_key_file=/home/users/{{ item.name }}/.ssh/id_rsa
+  with_items:
+    - { name: 'user02', uid: '1002', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user03', uid: '1003', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user04', uid: '1004', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user05', uid: '1005', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user06', uid: '1006', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user07', uid: '1007', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user08', uid: '1008', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user09', uid: '1009', password: 'XXXXXXXXXXXXX' }
+    - { name: 'user10', uid: '1010', password: 'XXXXXXXXXXXXX' }
+
+- name: copy ssh keys
+  local_action: command cp /home/users/{{ item.name }}/.ssh/id_rsa.pub /tmp/{{ item.name }}_id_rsa.pub creates=/tmp/{{ item.name }}_id_rsa.pub
+  with_items:
+    - { name: 'user02' }
+    - { name: 'user03' }
+    - { name: 'user04' }
+    - { name: 'user05' }
+    - { name: 'user06' }
+    - { name: 'user07' }
+    - { name: 'user08' }
+    - { name: 'user09' }
+    - { name: 'user10' }
+
+
+- name: Add the authorized_key to the user {{ item.name }}
+  authorized_key: user={{ item.name }} key="{{ lookup('file', '/tmp/' +  item.name  + '_id_rsa.pub') }}"
+  with_items:
+    - { name: 'user02' }
+    - { name: 'user03' }
+    - { name: 'user04' }
+    - { name: 'user05' }
+    - { name: 'user06' }
+    - { name: 'user07' }
+    - { name: 'user08' }
+    - { name: 'user09' }
+    - { name: 'user10' }
+
+@end
+)
+
+configure front (
+@begin
+---
+  - tasks:
+    - include: createbigseausers.yml
+@end
+)
+
+configure wn (
+@begin
+---
+  - tasks:
+    - include: wnbigseausers.yml
+
+@end
+)
+
+configure wnmesos (
+@begin
+---
+  - tasks:
+    - include: wnbigseausers.yml
+
+@end
+)
+

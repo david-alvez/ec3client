@@ -1,0 +1,21 @@
+description consul (
+    kind = 'component' and
+    short = 'Support of consul for Docker networks.' and
+    content = 'Consul provides a way to gather the information about the Docker networks when not using Docker Swarm. This is the best way for integrating it in Mesos.
+
+Webpage: https://luppeng.wordpress.com/2016/05/03/setting-up-an-overlay-network-on-docker-without-swarm/'
+)
+
+system front (
+    ec3_templates contains 'consul' and
+    disk.0.applications contains (name = 'ansible.modules.grycap.consul')
+)
+
+configure front (
+@begin
+  - roles:
+    - { role: 'grycap.consul' }
+
+@end
+)
+

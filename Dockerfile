@@ -9,4 +9,6 @@ RUN apt-get -y -q install python-ply
 RUN apt-get -y -q install sshpass
 RUN apt-get -y -q install python-pip
 RUN pip install IM-client
+COPY templates /ec3/templates
+ENV PATH="/ec3:${PATH}"
 CMD ["/bin/bash"]
