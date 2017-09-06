@@ -36,14 +36,6 @@ configure front (
 @end
 )
 
-system wnmesos ( ec3_templates contains 'nfs' )
-configure wnmesos (
-@begin
-  - roles:
-    - { role: 'grycap.nfs', nfs_mode: 'wn', nfs_client_imports: [{ local: "/home/users", remote: "/home/users", server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
-@end
-)
-
 system wn ( ec3_templates contains 'nfs' )
 configure wn (
 @begin

@@ -17,11 +17,11 @@ system front (
     disk.0.applications contains (name='ansible.modules.indigo-dc.hadoop')
 )
 
-system wn (
+system datanode (
+    cpu.count>=2 and
+    memory.size>=2g and
     net_interface.0.connection='private'
 )
-
-
 
 configure createbigseahdfs (
 @begin
@@ -81,7 +81,7 @@ configure front (
 @end
 )
 
-configure wn (
+configure datanode (
 @begin
 ---
   - ec3_prio: -5
@@ -101,3 +101,4 @@ configure wn (
 )
 
 
+deploy datanode 3
