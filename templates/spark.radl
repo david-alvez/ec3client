@@ -9,17 +9,17 @@ Webpage: http://spark.apache.org/'
 configure sparkinst (
 @begin
 ---
-    - get_url: url=http://apache.rediris.es/spark/spark-1.6.2/spark-1.6.2-bin-hadoop2.6.tgz dest=/opt/spark-1.6.2-bin-hadoop2.6.tgz force=no
+    - get_url: url=http://apache.rediris.es/spark/spark-1.6.3/spark-1.6.3-bin-hadoop2.6.tgz dest=/opt/spark-1.6.3-bin-hadoop2.6.tgz force=no
       register: result
       until: result|success
       retries: 5
       delay: 2
 
     - name: Decompress it
-      unarchive: src=/opt/spark-1.6.2-bin-hadoop2.6.tgz dest=/opt/ copy=no creates=/opt/spark-1.6.2-bin-hadoop2.6
+      unarchive: src=/opt/spark-1.6.3-bin-hadoop2.6.tgz dest=/opt/ copy=no creates=/opt/spark-1.6.3-bin-hadoop2.6
 
     - name: Create symbolic link to spark
-      file: src=/opt/spark-1.6.2-bin-hadoop2.6 dest=/opt/spark state=link
+      file: src=/opt/spark-1.6.3-bin-hadoop2.6 dest=/opt/spark state=link
     
     - name: update PATH environment variable
       copy: dest=/etc/profile.d/spark.sh content="export PATH=$PATH:/opt/spark/bin\nexport SPARK_HOME=/opt/spark"
@@ -30,8 +30,8 @@ configure front (
 @begin
 ---
   - vars:
-      principal: 'xxxxxx'
-      secret: 'xxxxxxx' 
+      principal: 'xxxxxxxx'
+      secret: 'xxxxxxxx' 
     tasks:
     - include: sparkinst.yml
     - name: Set Mesos authentication
@@ -51,6 +51,8 @@ configure front (
 @end
 )
 
+#          spark.mesos.principal ubuntu
+#          spark.mesos.secret ubuntusecret
 
 configure wn (
 @begin

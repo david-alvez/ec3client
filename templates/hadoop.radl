@@ -17,11 +17,11 @@ system front (
     disk.0.applications contains (name='ansible.modules.indigo-dc.hadoop')
 )
 
-system datanode (
-    cpu.count>=2 and
-    memory.size>=2g and
+system wn (
     net_interface.0.connection='private'
 )
+
+
 
 configure createbigseahdfs (
 @begin
@@ -37,11 +37,12 @@ configure createbigseahdfs (
         dest: /etc/profile.d/hadoop.sh
         content: |
             export PATH="$PATH:/opt/hadoop/bin"
-            export CLASSPATH="/opt/hadoop-2.7.3/etc/hadoop:/opt/hadoop-2.7.3/share/hadoop/common/lib/*:/opt/hadoop-2.7.3/share/hadoop/common/*:/opt/hadoop-2.7.3/share/hadoop/hdfs:/opt/hadoop-2.7.3/share/hadoop/hdfs/lib/*:/opt/hadoop-2.7.3/share/hadoop/hdfs/*:/opt/hadoop-2.7.3/share/hadoop/yarn/lib/*:/opt/hadoop-2.7.3/share/hadoop/yarn/*:/opt/hadoop-2.7.3/share/hadoop/mapreduce/lib/*:/opt/hadoop-2.7.3/share/hadoop/mapreduce/*:/contrib/capacity-scheduler/*.jar"
+            export CLASSPATH="/opt/hadoop-2.7.4/etc/hadoop:/opt/hadoop-2.7.4/share/hadoop/common/lib/*:/opt/hadoop-2.7.4/share/hadoop/common/*:/opt/hadoop-2.7.4/share/hadoop/hdfs:/opt/hadoop-2.7.4/share/hadoop/hdfs/lib/*:/opt/hadoop-2.7.4/share/hadoop/hdfs/*:/opt/hadoop-2.7.4/share/hadoop/yarn/lib/*:/opt/hadoop-2.7.4/share/hadoop/yarn/*:/opt/hadoop-2.7.4/share/hadoop/mapreduce/lib/*:/opt/hadoop-2.7.4/share/hadoop/mapreduce/*:/contrib/capacity-scheduler/*.jar"
 
     - name: create HDFS homes
       command: /opt/hadoop/bin/hdfs dfs -mkdir -p /users/{{ item.name }}
       with_items:
+	  - { name: 'user01' }
       - { name: 'user02' }
       - { name: 'user03' }
       - { name: 'user04' }
@@ -54,6 +55,7 @@ configure createbigseahdfs (
     - name: create HDFS homes
       command: /opt/hadoop/bin/hdfs dfs -chown {{ item.name }}:{{ item.name }} /users/{{ item.name }}
       with_items:
+	  - { name: 'user01' }
       - { name: 'user02' }
       - { name: 'user03' }
       - { name: 'user04' }
@@ -70,12 +72,13 @@ configure createbigseahdfs (
 configure front (
 @begin
 ---
- - roles:
-    - { role: 'indigo-dc.hadoop', hdfs_props: { "dfs.datanode.data.dir": "file:///opt/dfs/data" }, hadoop_master: "{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}", hadoop_type_of_node: 'master'}
+  - ec3_prio: -5
+    roles:
+#      - { role: 'indigo-dc.hadoop', hdfs_props: { "dfs.datanode.data.dir": "file:///opt/dfs/data" }, hadoop_master: "{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}", hadoop_type_of_node: 'master'}
+      - { role: 'indigo-dc.hadoop', hadoop_version: "2.7.4", hadoop_mirrors: [ "ftp://ftpgrycap.i3m.upv.es/public/eubrabigsea/data/" ], hdfs_props: { "dfs.datanode.data.dir": "file:///opt/dfs/data" }, hadoop_master: "{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}", hadoop_type_of_node: 'master'}
 
-
-   post_tasks:
-    - include: createbigseahdfs.yml
+    post_tasks:
+      - include: createbigseahdfs.yml
 
 
 @end
@@ -89,16 +92,10 @@ configure datanode (
       TEMPLATES:
         ec3_jpath: /system/front/ec3_templates
 
-#    tasks:
-#    - include: mesosphere_repo.yml
-#    - include_vars: framework_vars.yml
-#    - include: install_mesos.yml
-#    - include: conf_mesos_slave.yml
-
     roles:
-    - { role: 'indigo-dc.hadoop', hdfs_props: { "dfs.datanode.data.dir": "file:///opt/dfs/data" }, hadoop_master: "{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}" }
+#    - { role: 'indigo-dc.hadoop', hdfs_props: { "dfs.datanode.data.dir": "file:///opt/dfs/data" }, hadoop_master: "{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}" }
+    - { role: 'indigo-dc.hadoop', hadoop_mirrors: [ "ftp://ftpgrycap.i3m.upv.es/public/eubrabigsea/data/" ], hdfs_props: { "dfs.datanode.data.dir": "file:///opt/dfs/data" }, hadoop_master: "{{ hostvars[groups['front'][0]]['IM_NODE_PRIVATE_IP'] }}" }
 @end
 )
 
-
-deploy datanode 3
+#deploy datanode 3

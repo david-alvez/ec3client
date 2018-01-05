@@ -8,6 +8,7 @@ Webpage: http://mesos.apache.org/'
 
 network public (
     outbound = 'yes' and
+#    provider_id = '14' and
     outports contains '5050/tcp' and
     outports contains '2181/tcp' and
     outports contains '2888/tcp' and
@@ -19,24 +20,26 @@ network public (
 network private ()
 
 system front (
-    net_interface.1.ip = '158.42.104.238' and
+    cpu.count>=8 and
+    memory.size>=16g and
     net_interface.0.connection = 'private' and
-    net_interface.0.dns_name = 'largeserver' and
+    net_interface.0.dns_name = 'bsintserver' and
     net_interface.1.connection = 'public' and
-    net_interface.1.dns_name = 'largeserverpub' and
+    net_interface.1.dns_name = 'bsintserverpub' and
+#    net_interface.1.ip = '158.42.104.238' and
     queue_system = 'mesos' and
     ec3_templates contains 'mesos' and
-    cpu.count>=4 and
-    memory.size>=8g and
     # Install ansible roles needed
-    disk.0.applications contains (name = 'ansible.modules.grycap.mesos,docker-opts') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.mesos,weave') and
     disk.0.applications contains (name = 'ansible.modules.grycap.clues') and
+    #disk.0.applications contains (name = 'ansible.modules.grycap.docker-registry,mirror') and
+    disk.0.applications contains (name = 'ansible.modules.grycap.docker-registry') and
     disk.0.applications contains (name = 'ansible.modules.grycap.im')
 )
 
 system wn (
     cpu.count>=2 and
-    memory.size>=4g and
+    memory.size>=8g and
     net_interface.0.connection='private'
 )
 
@@ -85,11 +88,21 @@ configure front (
         ec3_xpath: /system/front/queue_system
       EXTRACT_PROXY_FILE:
         ec3_file: extract_proxy.py
+      PRIVATE_NODENAME:
+        ec3_xpath: /system/front/net_interface.0.dns_name
+      PUBLIC_NODENAME:
+        ec3_xpath: /system/front/net_interface.1.dns_name
+      VNODEPREFIX: 'bsintwn'
       principal: 'xxxxxxxx'
       secret: 'xxxxxxxx' 
       cluster_store_ip: '{{ ansible_default_ipv4.address }}'
       cluster_advertise_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}'
 
+    pre_tasks:
+    - file:
+        path: /opt/docker_local
+        state: directory
+        mode: 0755
 
     roles:
     # The install order matters !
@@ -97,66 +110,65 @@ configure front (
     - { role: 'grycap.im' }
     - { role: 'grycap.mesos', mesos_type_of_node: 'front',
                               max_number_of_nodes: '{{NNODES}}',
-                              vnode_prefix: 'largewn',
-                              mesos_docker_opts: '--experimental --cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
+                              vnode_prefix: '{{VNODEPREFIX}}',
+                              mesos_docker_opts: '-g /opt/docker_local --cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
                               principal: 'xxxxxxxx',
                               secret: 'xxxxxxxx' }
+    - { role: 'grycap.docker-registry', docker_type_of_node: 'front', docker_installation: 'both', front_hostname: '{{PRIVATE_NODENAME}}' }
     - { role: 'grycap.clues', clues_queue_system: '{{QUEUE_SYSTEM}}',
                               auth: '{{AUTH}}',
                               marathon_username: "xxxxxxxx", marathon_password: "xxxxxxxx",
                               chronos_username: "xxxxxxxx", chronos_password: "xxxxxxxx",
-                              mesos_servername: 'largeserverpub',
+                              mesos_servername: '{{PUBLIC_NODENAME}}',
                               extract_proxy_file: '{{EXTRACT_PROXY_FILE}}',
                               ec3_max_instances: '{{NNODES}}',
-                              vnode_prefix: 'largewn' }
-
+                              vnode_prefix: '{{VNODEPREFIX}}' }
+ 
 #    post_tasks:
 #    - include: port_forwarding.yml
-@end
-)
-
-configure wnmesos (
-@begin
----
-  - ec3_prio: -5
-    vars:
-      NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
-      cluster_store_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
-      cluster_advertise_ip: '{{ ansible_default_ipv4.address }}'
-    roles:
-      - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
-                                max_number_of_nodes: '{{NNODES}}',
-                                vnode_prefix: 'largewn',
-                                principal: 'xxxxxxxx',
-                                mesos_docker_opts: '--cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
-                                secret: 'xxxxxxxx'}
-    tasks:
-     - name: Install Mesos-DNS
-       get_url: url=https://github.com/mesosphere/mesos-dns/releases/download/v0.6.0/mesos-dns-v0.6.0-linux-amd64 dest=/opt/mesos-dns force=no
-       register: result
-       until: result|success
-       retries: 5
-       delay: 2 
-
 @end
 )
 
 configure wn (
 @begin
 ---
-  - ec3_prio: -5
+# MESOS is the last service to be deployed to avoid being active to soon - ec3_prio: -5
+  - ec3_prio: 10
     vars:
       NNODES: '{{ SYSTEMS | selectattr("ec3_max_instances_max", "defined") | sum(attribute="ec3_max_instances_max") }}'
       cluster_store_ip: '{{ hostvars[groups["front"][0]]["IM_NODE_PUBLIC_IP"] }}'
       cluster_advertise_ip: '{{ ansible_default_ipv4.address }}'
+      PRIVATE_NODENAME:
+        ec3_xpath: /system/front/net_interface.0.dns_name
+      PUBLIC_NODENAME:
+        ec3_xpath: /system/front/net_interface.1.dns_name
+      VNODEPREFIX: 'bsintwn'
     roles:
+      - { role: 'grycap.docker-registry', docker_type_of_node: 'wn', docker_installation: 'both', front_hostname: '{{PRIVATE_NODENAME}}' }
       - { role: 'grycap.mesos', mesos_type_of_node: 'wn',
                                 max_number_of_nodes: '{{NNODES}}',
-                                vnode_prefix: 'largewn',
+                                vnode_prefix: '{{VNODEPREFIX}}',
                                 principal: 'xxxxxxxx',
-                                mesos_docker_opts: '--experimental --cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000',
+                                mesos_slave_resources: 'ports:[10101-65535]',
+                                mesos_docker_opts: '--experimental --cluster-store consul://{{ cluster_store_ip }}:8500 --cluster-advertise {{cluster_advertise_ip}}:4000 --registry-mirror=http://{{PRIVATE_NODENAME}}:5555',
                                 secret: 'xxxxxxxx'}
+    tasks:
+     - name: Add resources
+       lineinfile:
+         dest: /etc/mesos-slave/resources
+         line: 'ports:[10101-65535]'
+     - name: Install Mesos-DNS
+       get_url: url=https://github.com/mesosphere/mesos-dns/releases/download/v0.6.0/mesos-dns-v0.6.0-linux-amd64 dest=/opt/mesos-dns force=no
+       register: result
+       until: result|success
+       retries: 5
+       delay: 2 
+     - name: Set up Mesos DNS as main DNS server
+       lineinfile:
+         dest: /etc/resolvconf/resolv.conf.d/head
+         line: 'nameserver {{PRIVATE_NODENAME}}'
+
 @end
 )
 
-deploy front 1
+#deploy front 1

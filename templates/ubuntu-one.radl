@@ -8,8 +8,8 @@ description ubuntu_one (
 system front (
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
-    disk.0.os.credentials.username = 'xxxxxx' and
-    disk.0.os.credentials.password = 'xxxxxx'
+    disk.0.os.credentials.username = 'XXXX' and
+    disk.0.os.credentials.password = 'XXXX'
 )
 
 # It uses Ubuntu 16
@@ -18,8 +18,8 @@ system wn (
     ec3_min_instances = 3 and # minimum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'one://onecloud.i3m.upv.es/444' and
-    disk.0.os.credentials.username = 'xxxxxx' and
-    disk.0.os.credentials.password = 'xxxxxx' and
+    disk.0.os.credentials.username = 'XXXX' and
+    disk.0.os.credentials.password = 'XXXX' and
     ec3_if_fail = 'wnmesos'
 )
 
@@ -28,7 +28,7 @@ system wnmesos (
     ec3_max_instances = 5 and # maximum number of working nodes in the cluster
     disk.0.os.name = 'linux' and
     disk.0.image.url = 'one://onecloud.i3m.upv.es/444' and
-    disk.0.os.credentials.username = 'xxxxxx' and
-    disk.0.os.credentials.password = 'xxxxxx'
+    disk.0.os.credentials.username = 'XXXX' and
+    disk.0.os.credentials.password = 'XXXX'
 )
 
