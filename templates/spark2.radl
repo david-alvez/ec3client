@@ -30,8 +30,8 @@ configure front (
 @begin
 ---
   - vars:
-      principal: 'xxxxxx'
-      secret: 'xxxxxx' 
+      principal: 'xxxxxxxx'
+      secret: 'xxxxxxxx' 
     tasks:
     - include: sparkinst.yml
     - name: Set Mesos authentication
@@ -50,6 +50,9 @@ configure front (
     - include: historyserver.yml 
 @end
 )
+
+#          spark.mesos.principal ubuntu
+#          spark.mesos.secret ubuntusecret
 
 configure wn (
 @begin
@@ -71,17 +74,5 @@ configure historyserver (
 
 @end
 )
-
-configure wnmesos (
-@begin
----
-  - tasks:
-    - include: sparkinst.yml
-
-@end
-)
-
-
-
 
 

@@ -20,6 +20,6 @@ configure front (
                                 max_number_of_nodes: '{{ NNODES }}',
                                 marathon_username: "ubuntu", marathon_password: "ubuntu_secret",
                                 chronos_username: "ubuntu", chronos_password: "ubuntu_secret",
-                                vnode_prefix: 'largewn' }
+                                vnode_prefix: 'clusterwn' }
 @end
 )

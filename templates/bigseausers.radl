@@ -7,9 +7,10 @@ description bigseausers (
 configure wnbigseausers (
 @begin
 ---
-- name: add several users, use mkpasswd to encode the password. Add as many users as you wish
-  user: name={{ item.name }} home=/home/users/{{ item.name }} createhome=no password={{ item.password }} uid={{ item.uid }} shell=/bin/bash 
+- name: add several users
+  user: name="{{ item.name }}" home="/home/users/{{ item.name }}" createhome=no password="{{ item.password }}" uid="{{ item.uid }}" shell=/bin/bash update_password=on_create groups="sudo,docker"
   with_items:
+    - { name: 'user01', uid: '1002', password: 'XXXXXXXXXXXXX' }
     - { name: 'user02', uid: '1002', password: 'XXXXXXXXXXXXX' }
     - { name: 'user03', uid: '1003', password: 'XXXXXXXXXXXXX' }
     - { name: 'user04', uid: '1004', password: 'XXXXXXXXXXXXX' }
@@ -26,8 +27,9 @@ configure createbigseausers (
 @begin
 ---
 - name: add several users
-  user: name={{ item.name }} home=/home/users/{{ item.name }} password={{ item.password }} uid={{ item.uid }} shell=/bin/bash generate_ssh_key=yes ssh_key_file=/home/users/{{ item.name }}/.ssh/id_rsa
+  user: name="{{ item.name }}" home="/home/users/{{ item.name }}" password="{{ item.password }}" uid="{{ item.uid }}" shell=/bin/bash update_password=on_create groups="sudo,docker" generate_ssh_key=yes ssh_key_file=/home/users/{{ item.name }}/.ssh/id_rsa
   with_items:
+    - { name: 'user01', uid: '1002', password: 'XXXXXXXXXXXXX' }
     - { name: 'user02', uid: '1002', password: 'XXXXXXXXXXXXX' }
     - { name: 'user03', uid: '1003', password: 'XXXXXXXXXXXXX' }
     - { name: 'user04', uid: '1004', password: 'XXXXXXXXXXXXX' }
@@ -39,8 +41,9 @@ configure createbigseausers (
     - { name: 'user10', uid: '1010', password: 'XXXXXXXXXXXXX' }
 
 - name: copy ssh keys
-  local_action: command cp /home/users/{{ item.name }}/.ssh/id_rsa.pub /tmp/{{ item.name }}_id_rsa.pub creates=/tmp/{{ item.name }}_id_rsa.pub
+  local_action: command cp /home/users/"{{ item.name }}"/.ssh/id_rsa.pub /tmp/"{{ item.name }}"_id_rsa.pub creates=/tmp/"{{ item.name }}"_id_rsa.pub
   with_items:
+    - { name: 'user01' }
     - { name: 'user02' }
     - { name: 'user03' }
     - { name: 'user04' }
@@ -51,10 +54,10 @@ configure createbigseausers (
     - { name: 'user09' }
     - { name: 'user10' }
 
-
 - name: Add the authorized_key to the user {{ item.name }}
-  authorized_key: user={{ item.name }} key="{{ lookup('file', '/tmp/' +  item.name  + '_id_rsa.pub') }}"
+  authorized_key: user="{{ item.name }}" key="{{ lookup('file', '/tmp/' +  item.name  + '_id_rsa.pub') }}"
   with_items:
+    - { name: 'user01' }
     - { name: 'user02' }
     - { name: 'user03' }
     - { name: 'user04' }
@@ -71,7 +74,9 @@ configure createbigseausers (
 configure front (
 @begin
 ---
-  - tasks:
+# USER creation is the last thing to configure because of weave and the docker group
+  - ec3_prio: 15
+    tasks:
     - include: createbigseausers.yml
 @end
 )
@@ -79,16 +84,20 @@ configure front (
 configure wn (
 @begin
 ---
-  - tasks:
+# USER creation is the last thing to configure because of weave and the docker group
+  - ec3_prio: 15
+    tasks:
     - include: wnbigseausers.yml
 
 @end
 )
 
-configure wnmesos (
+configure datanode (
 @begin
 ---
-  - tasks:
+# USER creation is the last thing to configure because of weave and the docker group   
+  - ec3_prio: 15
+    tasks:
     - include: wnbigseausers.yml
 
 @end

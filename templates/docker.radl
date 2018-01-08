@@ -1,9 +1,7 @@
 description docker (
     kind = 'component' and
     short = 'An open-source tool to deploy applications inside software containers.' and
-    content = 'Docker automates the deployment of applications inside software containers, by providing an additional layer of abstraction and automation of operating-system-level virtualization on Linux.
-
-Webpage: https://www.docker.com/'
+    content = 'Docker automates the deployment of applications inside software containers, by providing an additional layer of abstraction and automation of operating-system-level virtualization on Linux. Webpage: https://www.docker.com/'
 )
 
 system front (
@@ -15,19 +13,7 @@ configure front (
 @begin
   - roles:
     - { role: 'grycap.docker' }
-@end
-)
-
-configure wn (
-@begin
-  - roles:
-    - { role: 'grycap.docker' }
-
-  - tasks:
-    - name: Network configuration
-      copy: dest=/etc/docker/daemon.json content='{ "cluster-store": "consul:/{{ansible_default_ipv4.address}}:8500", "cluster-advertise": {{ansible_default_ipv4.address}}:4000" }'
-}
-
+#    - { role: 'grycap.docker-registry' }
 @end
 )
 
@@ -36,8 +22,21 @@ configure wnmesos (
   - roles:
     - { role: 'grycap.docker' }
 
-  - tasks:
-    - name: Network configuration
-      copy: dest=/etc/docker/daemon.json content='{ "cluster-store": "consul:/{{ansible_default_ipv4.address}}:8500", "cluster-advertise": {{ansible_default_ipv4.address}}:4000" }'
+#  - tasks:
+#    - name: Network configuration wnmesos
+#      copy: dest=/etc/docker/daemon.json content="{ \"cluster-store\"':' \"consul':'/{{ansible_default_ipv4.address}}':'8500\", \"cluster-advertise\"':' {{ansible_default_ipv4.address}}':'4000\" }\"
 @end
 )
+
+configure wn (
+@begin
+  - roles:
+    - { role: 'grycap.docker' }
+#    - { role: 'grycap.docker-registry', front_hostname: 'bsintserverpub', docker_type_of_node: 'wn' }
+
+#  - tasks:
+#    - name: Network configuration wn
+#      copy: dest=/etc/docker/daemon.json content="{ \"cluster-store\"':' \"consul':'/{{ansible_default_ipv4.address}}':'8500\", \"cluster-advertise\"':' {{ansible_default_ipv4.address}}':'4000\" }\"
+@end
+)
+

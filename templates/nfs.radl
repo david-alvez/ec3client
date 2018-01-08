@@ -30,16 +30,28 @@ system front (
 
 configure front (
 @begin
-  - roles:
-    - { role: 'grycap.nfs', nfs_mode: 'front', nfs_exports: [{path: "/home/users", export: "largewn*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"}] }
+  - ec3_prio: -6
+    vars:
+      VNODEPREFIX: 'bsintwn'
+    roles:
+     - { role: 'grycap.nfs', nfs_mode: 'front', nfs_exports: [{path: "/home/users", export: "{{VNODEPREFIX}}*.localdomain(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"}] }
 
 @end
 )
 
+#system datanode ( ec3_templates contains 'nfs' )
+#configure datanode (
+#@begin
+#  - roles:
+#    - { role: 'grycap.nfs', nfs_mode: 'wn', nfs_client_imports: [{ local: "/home/users", remote: "/home/users", server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
+#@end
+#)
+
 system wn ( ec3_templates contains 'nfs' )
 configure wn (
 @begin
-  - roles:
+  - ec3_prio: 1
+    roles:
     - { role: 'grycap.nfs', nfs_mode: 'wn', nfs_client_imports: [{ local: "/home/users", remote: "/home/users", server_host: '{{ hostvars[groups["front"][0]]["IM_NODE_PRIVATE_IP"] }}' }] }
 @end
 )
